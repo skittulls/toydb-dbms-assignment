@@ -1,0 +1,24 @@
+# Binaries & build artifacts
+*.o
+*.a
+*.so
+bin/
+obj/
+build/
+.DS_Store
+core
+*.core
+
+# Engine runtime files & archives
+*.sp
+*.idx
+*.tar.gz
+*.tar
+data.tar
+file1
+file2
+*~
+
+# Handouts & Docs
+*.pdf
+data.tar.gz
