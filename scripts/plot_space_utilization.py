@@ -37,13 +37,13 @@ def plot_space_utilization():
     ax1.set_ylabel('Effective Space Utilization (%)', fontsize=11, labelpad=8)
     ax1.set_xticks(x)
     ax1.set_xticklabels(labels, fontsize=10)
-    ax1.set_ylim(0, 105)
+    ax1.set_ylim(0, 110)
     ax1.grid(axis='y', linestyle='--', alpha=0.5)
 
     for bar in bars1:
         yval = bar.get_height()
-        ax1.text(bar.get_x() + bar.get_width()/2.0, yval + 1.5, f'{yval:.1f}%',
-                 ha='center', va='bottom', fontsize=9, fontweight='bold')
+        ax1.text(bar.get_x() + bar.get_width()/2.0, yval + 1.8, f'{yval:.1f}%',
+                 ha='center', va='bottom', fontsize=9.5, fontweight='bold')
 
     # 2. Total Storage Allocated (KB) & Wasted Space (KB)
     width = 0.35
@@ -54,10 +54,11 @@ def plot_space_utilization():
     b2 = ax2.bar(x + width/2, waste_kb, width=width, label='Wasted Space (KB)', color='#ff7f0e', edgecolor='black')
     ax2.set_title('Total Storage Overhead & Internal Fragmentation', fontsize=13, fontweight='bold', pad=12)
     ax2.set_xlabel('Record Management Scheme', fontsize=11, labelpad=8)
-    ax2.set_ylabel('Kilobytes (KB)', fontsize=11, labelpad=8)
+    ax2.set_ylabel('Storage in Kilobytes (KB)', fontsize=11, labelpad=8)
     ax2.set_xticks(x)
     ax2.set_xticklabels(labels, fontsize=10)
-    ax2.legend(frameon=True, fontsize=10)
+    ax2.set_ylim(0, max(alloc_kb) * 1.22)
+    ax2.legend(loc='upper left', frameon=True, framealpha=0.92, fontsize=10)
     ax2.grid(axis='y', linestyle='--', alpha=0.5)
 
     plt.tight_layout()

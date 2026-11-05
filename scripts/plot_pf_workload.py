@@ -67,8 +67,9 @@ def main():
     ax1.set_title('Logical & Physical I/O vs. Read/Write Query Mix', fontsize=12, fontweight='bold', pad=10)
     ax1.set_xlabel('Query Mixture (% Read / % Write)', fontsize=11, fontweight='semibold')
     ax1.set_ylabel('I/O Operations Count', fontsize=11, fontweight='semibold')
+    ax1.set_ylim(0, max(log_reads) * 1.25)
     ax1.grid(True, linestyle=':', alpha=0.6)
-    ax1.legend(loc='best', frameon=True)
+    ax1.legend(loc='upper right', frameon=True, framealpha=0.92, fontsize=9.5)
 
     # Subplot 2: Total Physical I/O & Hit Ratio
     color = '#9467bd'
@@ -76,15 +77,20 @@ def main():
     ax2.set_xlabel('Query Mixture (% Read / % Write)', fontsize=11, fontweight='semibold')
     ax2.set_ylabel('Total Physical I/O (Disk Reads + Writes)', color=color, fontsize=11, fontweight='semibold')
     bar = ax2.bar(mix_labels, total_phys, color=color, alpha=0.45, width=0.45, label='Total Physical I/O')
+    ax2.set_ylim(0, max(total_phys) * 1.30)
     ax2.tick_params(axis='y', labelcolor=color)
     ax2.grid(True, linestyle=':', alpha=0.6)
 
     ax2_twin = ax2.twinx()
     color_twin = '#e377c2'
-    ax2_twin.plot(mix_labels, hit_ratios, color=color_twin, marker='o', linewidth=2.5, label='Buffer Hit Ratio (%)')
+    line_twin = ax2_twin.plot(mix_labels, hit_ratios, color=color_twin, marker='o', linewidth=2.5, label='Buffer Hit Ratio (%)')
     ax2_twin.set_ylabel('Buffer Hit Ratio (%)', color=color_twin, fontsize=11, fontweight='semibold')
     ax2_twin.tick_params(axis='y', labelcolor=color_twin)
     ax2_twin.set_ylim([0, 100])
+
+    lines1, labels1 = ax2.get_legend_handles_labels()
+    lines2, labels2 = ax2_twin.get_legend_handles_labels()
+    ax2.legend(lines1 + lines2, labels1 + labels2, loc='upper left', frameon=True, framealpha=0.92, fontsize=9.5)
 
     fig.tight_layout()
     plt.savefig(out_path, bbox_inches='tight')
