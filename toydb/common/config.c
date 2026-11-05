@@ -20,6 +20,18 @@ static void trim(char *str) {
     *(end + 1) = '\0';
 }
 
+/* Normalize identifier: lowercase and strip '_', '-', ' ', '[', ']' */
+static void normalize_name(const char *src, char *dst, size_t dst_size) {
+    size_t i = 0;
+    while (*src && i + 1 < dst_size) {
+        unsigned char c = (unsigned char)*src++;
+        if (c != '_' && c != '-' && c != ' ' && c != '\t' && c != '[' && c != ']') {
+            dst[i++] = (char)tolower(c);
+        }
+    }
+    dst[i] = '\0';
+}
+
 static void set_defaults(void) {
     g_toydb_config.pool_size = 20;
     g_toydb_config.default_strategy = 0; /* LRU */
@@ -43,6 +55,7 @@ static void set_defaults(void) {
 int config_load(const char *path) {
     FILE *fp = NULL;
     char line[512];
+    char current_section[64];
     const char *candidates[] = {
         path,
         "toydb.cfg",
@@ -53,6 +66,7 @@ int config_load(const char *path) {
     int i;
 
     set_defaults();
+    current_section[0] = '\0';
 
     for (i = 0; candidates[i] != NULL; i++) {
         if (candidates[i] != NULL && candidates[i][0] != '\0') {
@@ -69,43 +83,59 @@ int config_load(const char *path) {
     while (fgets(line, sizeof(line), fp)) {
         char *eq;
         trim(line);
-        if (line[0] == '\0' || line[0] == '#' || line[0] == ';' || line[0] == '[') {
+        if (line[0] == '\0' || line[0] == '#' || line[0] == ';') {
             continue;
         }
+
+        /* Check for INI section headers like [BufferPool] or [buffer_pool] */
+        if (line[0] == '[') {
+            normalize_name(line, current_section, sizeof(current_section));
+            continue;
+        }
+
         eq = strchr(line, '=');
         if (eq == NULL) continue;
         *eq = '\0';
         {
             char *key = line;
             char *val = eq + 1;
+            char norm_key[64];
             char *hash = strchr(val, '#');
             if (hash) *hash = '\0';
             trim(key);
             trim(val);
 
-            if (strcmp(key, "pool_size") == 0) {
+            normalize_name(key, norm_key, sizeof(norm_key));
+
+            if (strcmp(norm_key, "poolsize") == 0 || strcmp(key, "pool_size") == 0) {
                 int ps = atoi(val);
                 if (ps >= 3) g_toydb_config.pool_size = ps;
-            } else if (strcmp(key, "default_strategy") == 0) {
-                if (strcasecmp(val, "MRU") == 0) {
+            } else if (strcmp(norm_key, "defaultstrategy") == 0 || strcmp(key, "default_strategy") == 0) {
+                /* Handles both strings (LRU/MRU) and integers (0/1) */
+                if (strcasecmp(val, "MRU") == 0 || strcmp(val, "1") == 0 ||
+                    strcasecmp(val, "PF_STRATEGY_MRU") == 0) {
                     g_toydb_config.default_strategy = 1;
-                } else {
+                } else if (strcasecmp(val, "LRU") == 0 || strcmp(val, "0") == 0 ||
+                           strcasecmp(val, "PF_STRATEGY_LRU") == 0) {
                     g_toydb_config.default_strategy = 0;
+                } else {
+                    int s = atoi(val);
+                    g_toydb_config.default_strategy = (s == 1) ? 1 : 0;
                 }
-            } else if (strcmp(key, "working_set_pages") == 0) {
+            } else if (strcmp(norm_key, "workingsetpages") == 0 || strcmp(key, "working_set_pages") == 0) {
                 int wsp = atoi(val);
                 if (wsp > 0) g_toydb_config.working_set_pages = wsp;
-            } else if (strcmp(key, "cyclic_scan_pages") == 0) {
+            } else if (strcmp(norm_key, "cyclicscanpages") == 0 || strcmp(key, "cyclic_scan_pages") == 0) {
                 int csp = atoi(val);
                 if (csp > 0) g_toydb_config.cyclic_scan_pages = csp;
-            } else if (strcmp(key, "num_queries") == 0) {
+            } else if (strcmp(norm_key, "numqueries") == 0 || strcmp(key, "num_queries") == 0) {
                 int nq = atoi(val);
                 if (nq > 0) g_toydb_config.num_queries = nq;
-            } else if (strcmp(key, "query_mixes") == 0) {
+            } else if (strcmp(norm_key, "querymixes") == 0 || strcmp(key, "query_mixes") == 0) {
                 strncpy(g_toydb_config.query_mixes, val, sizeof(g_toydb_config.query_mixes) - 1);
-            } else if (strcmp(key, "student_file") == 0) {
+            } else if (strcmp(norm_key, "studentfile") == 0 || strcmp(key, "student_file") == 0) {
                 strncpy(g_toydb_config.student_file, val, sizeof(g_toydb_config.student_file) - 1);
-            } else if (strcmp(key, "static_thresholds") == 0) {
+            } else if (strcmp(norm_key, "staticthresholds") == 0 || strcmp(key, "static_thresholds") == 0) {
                 char temp[256];
                 char *token;
                 int count = 0;
@@ -120,12 +150,12 @@ int config_load(const char *path) {
                     token = strtok(NULL, ",");
                 }
                 if (count > 0) g_toydb_config.num_static_thresholds = count;
-            } else if (strcmp(key, "leaf_fill_factor") == 0) {
+            } else if (strcmp(norm_key, "leaffillfactor") == 0 || strcmp(key, "leaf_fill_factor") == 0) {
                 int ff = atoi(val);
                 if (ff >= 10 && ff <= 100) g_toydb_config.leaf_fill_factor = ff;
-            } else if (strcmp(key, "key_type") == 0) {
+            } else if (strcmp(norm_key, "keytype") == 0 || strcmp(key, "key_type") == 0) {
                 strncpy(g_toydb_config.key_type, val, sizeof(g_toydb_config.key_type) - 1);
-            } else if (strcmp(key, "demo_query_rollno") == 0) {
+            } else if (strcmp(norm_key, "demoqueryrollno") == 0 || strcmp(key, "demo_query_rollno") == 0) {
                 strncpy(g_toydb_config.demo_query_rollno, val, sizeof(g_toydb_config.demo_query_rollno) - 1);
             }
         }
@@ -180,4 +210,3 @@ const char *cfg_get_demo_query_rollno(void) {
     if (!g_config_initialized) config_load(NULL);
     return g_toydb_config.demo_query_rollno;
 }
-
