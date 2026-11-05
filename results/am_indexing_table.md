@@ -6,11 +6,11 @@
 
 | Indexing Approach | Scope | Build Time (ms) | Physical Reads | Physical Writes | Total Disk I/O | Index Pages | Data Pages | Total Pages | Avg Point Query (us) |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **1. Batch Single-Op Scan** | Scan Existing Data + Build Index | 16.07 | 548 | 230 | 778 | **135** | 455 | 590 | 1.05 |
-| **2. Incremental Interleaved** | Insert Data + Build Index | 16.85 | 93 | 686 | 779 | **135** | 455 | 590 | 0.81 |
-| **Pre-Sorted Top-Down (Reference)** | Sorted Keys + Iterative AM_InsertEntry | 4.65 | 1 | 157 | 158 | **177** | 0 | 177 | 1.01 |
-| **3a. Bottom-Up Bulk Load** | Scan Pre-Sorted File + Build Index | 6.19 | 456 | 103 | 559 | **101** | 455 | **556** | **0.79** |
-| **3b. Bottom-Up Bulk Load** | Index Construction Only | **4.39** | **1** | **103** | **104** | **101** | 0 | **101** | **0.79** |
+| **1. Batch Single-Op Scan** | Scan Existing Data + Build Index | 19.16 | 548 | 230 | 778 | **135** | 455 | 590 | 1.06 |
+| **2. Incremental Interleaved** | Insert Data + Build Index | 17.50 | 93 | 686 | 779 | **135** | 455 | 590 | 0.81 |
+| **Pre-Sorted Top-Down (Reference)** | Sorted Keys + Iterative AM_InsertEntry | 4.68 | 1 | 157 | 158 | **177** | 0 | 177 | 1.05 |
+| **3a. Bottom-Up Bulk Load** | Scan Pre-Sorted File + Build Index | 6.22 | 456 | 103 | 559 | **101** | 455 | **556** | **0.80** |
+| **3b. Bottom-Up Bulk Load** | Index Construction Only | **4.42** | **1** | **103** | **104** | **101** | 0 | **101** | **0.80** |
 
 ## 2. Pure B+ Tree Index Component Breakdown
 

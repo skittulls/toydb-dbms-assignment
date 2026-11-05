@@ -1,6 +1,6 @@
 Approach,BuildTimeMs,PhysicalReads,PhysicalWrites,TotalPhysicalIO,IndexPages,DataPages,TotalPages,AvgQueryTimeUs
-Method1_Batch,16.07,548,230,778,135,455,590,1.05
-Method2_Incremental,16.85,93,686,779,135,455,590,0.81
-PreSorted_TopDown_Ref,4.65,1,157,158,177,0,177,1.01
-Method3a_BulkLoad_Scan,6.19,456,103,559,101,455,556,0.79
-Method3b_BulkLoad_IdxOnly,4.39,1,103,104,101,0,101,0.79
+Method1_Batch,19.16,548,230,778,135,455,590,1.06
+Method2_Incremental,17.50,93,686,779,135,455,590,0.81
+PreSorted_TopDown_Ref,4.68,1,157,158,177,0,177,1.05
+Method3a_BulkLoad_Scan,6.22,456,103,559,101,455,556,0.80
+Method3b_BulkLoad_IdxOnly,4.42,1,103,104,101,0,101,0.80
