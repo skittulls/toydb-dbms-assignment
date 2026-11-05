@@ -288,10 +288,11 @@ Evaluated on `student.txt` using `roll-no` key across all 17,813 records (Buffer
 #### Table 1: End-to-End System Evaluation (Data File + Index File)
 | Indexing Approach | Scope | Build Time (ms) | Physical Reads | Physical Writes | Total Disk I/O | Index Pages | Data Pages | Total Pages | Avg Point Query (us) |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **1. Batch Single-Op Scan** | Scan Existing Data + Build Index | 15.53 ms | 548 | 230 | 778 | **135** | 455 | 590 | 0.97 us |
-| **2. Incremental Interleaved** | Insert Data + Build Index | 16.21 ms | 93 | 686 | 779 | **135** | 455 | 590 | 0.80 us |
-| **3a. Bottom-Up Bulk Load** | Scan Pre-Sorted File + Build Index | 6.52 ms | 456 | 103 | 559 | **101** | 455 | 556 | 0.81 us |
-| **3b. Bottom-Up Bulk Load** | Index Construction Only | **4.72 ms** | **1** | **103** | **104** | **101** | 0 | **101** | **0.81 us** |
+| **1. Batch Single-Op Scan** | Scan Existing Data + Build Index | 19.16 ms | 548 | 230 | 778 | **135** | 455 | 590 | 1.06 us |
+| **2. Incremental Interleaved** | Insert Data + Build Index | 17.50 ms | 93 | 686 | 779 | **135** | 455 | 590 | 0.81 us |
+| **Pre-Sorted Top-Down (Ref)** | Sorted Keys + Iterative AM_InsertEntry | 4.68 ms | 1 | 157 | 158 | **177** | 0 | 177 | 1.05 us |
+| **3a. Bottom-Up Bulk Load** | Scan Pre-Sorted File + Build Index | 6.22 ms | 456 | 103 | 559 | **101** | 455 | 556 | 0.80 us |
+| **3b. Bottom-Up Bulk Load** | Index Construction Only | **4.42 ms** | **1** | **103** | **104** | **101** | 0 | **101** | **0.80 us** |
 
 #### Table 2: Pure B+ Tree Index Component Breakdown (Excluding Data Pages)
 Isolating index-specific operations demonstrates that dynamic tree construction in Method 1 and Method 2 produces an identical index structure, while Method 3 achieves optimal compaction:
@@ -299,6 +300,7 @@ Isolating index-specific operations demonstrates that dynamic tree construction 
 | :--- | :--- | :--- | :--- | :--- |
 | **1. Batch Single-Op Scan** | 135 | 93 | 230 | 323 |
 | **2. Incremental Interleaved** | 135 | 93 | 231 | 324 |
+| **Pre-Sorted Top-Down (Ref)** | 177 | 1 | 157 | 158 |
 | **3. Bottom-Up Bulk Load** | **101** (-25.2%) | **1** | **103** | **104** (-67.9%) |
 
 #### Table 3: Buffer Locality vs Adversarial Thrashing Analysis (`pool_size = 20`)
@@ -326,7 +328,7 @@ Isolating index-specific operations demonstrates that dynamic tree construction 
    - Bulk loading remains completely immune to thrashing, requiring only **104 sequential disk I/Os** under all workloads — a **138x reduction in physical I/O** over random dynamic insertion!
 4. **Bulk Loading Compaction & Throughput**:
    - Bottom-up leaf packing at 90% fill factor compacts the tree into **101 pages** (a **25.2% storage saving** over 50/50 dynamic splits).
-   - Construction time is **4.72 ms** (over **$3.4\times$ faster** than incremental interleaved insertion).
+   - Construction time is **4.42 ms** (over **$3.9\times$ faster** than incremental interleaved insertion).
 
 ---
 
@@ -335,36 +337,50 @@ Isolating index-specific operations demonstrates that dynamic tree construction 
 All operational thresholds, buffer pool parameters, and benchmark configurations are dynamically managed via `toydb.cfg` without modifying or recompiling the codebase:
 
 ```ini
-[buffer_pool]
-# Dynamic size of buffer pool (number of frames)
+# ==============================================================================
+# ToyDB Universal Configuration File
+# Database Management Systems | Storage & Indexing Engine
+# Dynamic configuration: all operational and benchmark parameters are tuned here.
+# ==============================================================================
+
+[BufferPool]
+# Buffer pool size (number of memory frames, default: 20)
 pool_size = 20
 
-# Default file replacement policy (0 = LRU, 1 = MRU)
-default_strategy = 0
+# Default page replacement strategy when not specified: LRU or MRU
+default_strategy = LRU
 
-[workload]
-# Working set page count for random access mixtures
+[Workload]
+# Working set in pages for synthetic benchmarks (must exceed pool_size for eviction)
 working_set_pages = 100
 
-# File page count for cyclic sequential access scan
+# Working set in pages for cyclic sequential file scan benchmark (e.g. 25 vs pool 20)
 cyclic_scan_pages = 25
 
-# Total queries executed in benchmark
+# Number of queries to execute per workload mixture
 num_queries = 2000
 
-# Tested query mixtures (Read% / Write%)
+# Query mixtures (read_percent/write_percent)
 query_mixes = 100/0, 80/20, 60/40, 50/50, 40/60, 20/80, 0/100
 
-[slotted_page]
+[SlottedPage]
+# Path to student dataset
 student_file = data/student.txt
+
+# Static slot thresholds (in bytes) to evaluate in space utilization comparison
 static_thresholds = 108, 128, 160, 200, 256, 512
 
-[bulk_load]
-# Target leaf packing fill factor percentage
+[BulkLoad]
+# Target fill factor percentage for leaf nodes during bulk loading (50 to 100)
 leaf_fill_factor = 90
 
-# Key mode: "char" (all 17,813 records) or "numeric" (16,977 records)
+# Search key mode for Student B+ tree indexing:
+# 'char'   : String key of length 12 (indexes all 17,813 records, including alphanumeric like '96D07001')
+# 'numeric': Integer key (indexes the 16,977 pure-numeric roll numbers)
 key_type = char
+
+# Target student roll number for end-to-end lookup demo (--query <roll_no>)
+demo_query_rollno = 95302001
 ```
 
 ---
