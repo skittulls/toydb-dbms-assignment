@@ -536,8 +536,10 @@ void PF_PrintStats(void)
 
 void PF_SetBufferSize(int numBuffers)
 {
-	if (numBuffers >= 3)
+	if (numBuffers >= 3) {
 		PF_BufPoolSize = numBuffers;
+		PFbufClearFreeList();
+	}
 }
 
 int PF_GetBufferSize(void)

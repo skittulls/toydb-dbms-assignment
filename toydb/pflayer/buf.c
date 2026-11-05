@@ -10,6 +10,7 @@ PFbufPrint() */
 int PF_BufPoolSize = PF_DEFAULT_BUFS; /* dynamic buffer limit, defaults to 20 */
 
 static int PFnumbpage = 0;	/* # of buffer pages in memory */
+static int PFnumused = 0;	/* # of active used buffer pages in PFfirstbpage */
 static PFbpage *PFfirstbpage = NULL;	/* ptr to first buffer page, or NULL */
 static PFbpage *PFlastbpage = NULL;	/* ptr to last buffer page, or NULL */
 static PFbpage *PFfreebpage = NULL;	/* list of free buffer pages */
@@ -18,6 +19,29 @@ static long PF_access_counter = 0;	/* monotonic timestamp for LRU/MRU */
 
 extern PF_Stats PF_stats;
 extern int PF_GetNumOpenFiles(void);
+
+void PFbufClearFreeList(void)
+/****************************************************************************
+SPECIFICATIONS:
+	Free all pages in the free list and decrease PFnumbpage.
+	Ensures pool size reductions never keep excess free memory.
+*****************************************************************************/
+{
+	PFbpage *curr = PFfreebpage;
+	while (curr != NULL) {
+		PFbpage *next = curr->nextpage;
+		free(curr);
+		if (PFnumbpage > 0)
+			PFnumbpage--;
+		curr = next;
+	}
+	PFfreebpage = NULL;
+}
+
+int PFbufGetNumUsed(void)
+{
+	return PFnumused;
+}
 
 static void PFbufInsertFree(bpage)
 PFbpage *bpage;
@@ -45,6 +69,7 @@ SPECIFICATIONS:
 	PFfirstbpage = bpage;
 	if (PFlastbpage == NULL)
 		PFlastbpage = bpage;
+	PFnumused++;
 }
 	
 void PFbufUnlink(bpage)
@@ -67,6 +92,8 @@ SPECIFICATIONS:
 		bpage->prevpage->nextpage = bpage->nextpage;
 
 	bpage->prevpage = bpage->nextpage = NULL;
+	if (PFnumused > 0)
+		PFnumused--;
 }
 
 static PFbpage *SelectVictim(target_fd, strategy)
@@ -171,13 +198,13 @@ SPECIFICATIONS:
 	PFbpage *tbpage;	/* temporary pointer to buffer page */
 	int error;
 
-	/* 1. Free list has an available buffer */
-	if (PFfreebpage != NULL) {
+	/* 1. Free list has an available buffer AND active used frames is under pool limit */
+	if (PFnumused < PF_MAX_BUFS && PFfreebpage != NULL) {
 		*bpage = PFfreebpage;
 		PFfreebpage = (*bpage)->nextpage;
 	}
-	/* 2. Pool limit has not been reached */
-	else if (PFnumbpage < PF_MAX_BUFS) {
+	/* 2. Pool limit has not been reached (allocate new buffer frame) */
+	else if (PFnumused < PF_MAX_BUFS && PFnumbpage < PF_MAX_BUFS) {
 		if ((*bpage = (PFbpage *)malloc(sizeof(PFbpage))) == NULL) {
 			*bpage = NULL;
 			PFerrno = PFE_NOMEM;
@@ -185,7 +212,7 @@ SPECIFICATIONS:
 		}
 		PFnumbpage++;
 	}
-	/* 3. Pool is full: select victim to evict */
+	/* 3. Pool is full (PFnumused >= PF_MAX_BUFS): select victim to evict */
 	else {
 		tbpage = SelectVictim(target_fd, strategy);
 		if (tbpage == NULL) {

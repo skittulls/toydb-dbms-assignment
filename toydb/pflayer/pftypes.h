@@ -83,5 +83,7 @@ extern int PFbufAlloc(int fd, int pagenum, PFfpage **fpage, int (*writefcn)(), i
 extern int PFbufReleaseFile(int fd, int (*writefcn)());
 extern int PFbufUsed(int fd, int pagenum);
 extern void PFbufPrint(void);
+extern void PFbufClearFreeList(void);
+extern int PFbufGetNumUsed(void);
 
 #endif /* PFTYPES_H */
