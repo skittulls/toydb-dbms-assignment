@@ -65,8 +65,8 @@ def main():
     ax1.plot(mix_labels, phys_writes, marker='d', color='#d62728', linewidth=2, linestyle='--', label='Physical Writes')
 
     ax1.set_title('Logical & Physical I/O vs. Read/Write Query Mix', fontsize=12, fontweight='bold', pad=10)
-    ax1.set_xlabel('Query Mixture (% Read / % Write)', fontsize=11, fontweight='semibold')
-    ax1.set_ylabel('I/O Operations Count', fontsize=11, fontweight='semibold')
+    ax1.set_xlabel('Query Mixture (% Read / % Write)', fontsize=11, fontweight='bold')
+    ax1.set_ylabel('I/O Operations Count', fontsize=11, fontweight='bold')
     ax1.set_ylim(0, max(log_reads) * 1.25)
     ax1.grid(True, linestyle=':', alpha=0.6)
     ax1.legend(loc='upper right', frameon=True, framealpha=0.92, fontsize=9.5)
@@ -74,8 +74,8 @@ def main():
     # Subplot 2: Total Physical I/O & Hit Ratio
     color = '#9467bd'
     ax2.set_title('Total Disk I/O & Buffer Hit Ratio', fontsize=12, fontweight='bold', pad=10)
-    ax2.set_xlabel('Query Mixture (% Read / % Write)', fontsize=11, fontweight='semibold')
-    ax2.set_ylabel('Total Physical I/O (Disk Reads + Writes)', color=color, fontsize=11, fontweight='semibold')
+    ax2.set_xlabel('Query Mixture (% Read / % Write)', fontsize=11, fontweight='bold')
+    ax2.set_ylabel('Total Physical I/O (Disk Reads + Writes)', color=color, fontsize=11, fontweight='bold')
     bar = ax2.bar(mix_labels, total_phys, color=color, alpha=0.45, width=0.45, label='Total Physical I/O')
     ax2.set_ylim(0, max(total_phys) * 1.30)
     ax2.tick_params(axis='y', labelcolor=color)
@@ -84,7 +84,7 @@ def main():
     ax2_twin = ax2.twinx()
     color_twin = '#e377c2'
     line_twin = ax2_twin.plot(mix_labels, hit_ratios, color=color_twin, marker='o', linewidth=2.5, label='Buffer Hit Ratio (%)')
-    ax2_twin.set_ylabel('Buffer Hit Ratio (%)', color=color_twin, fontsize=11, fontweight='semibold')
+    ax2_twin.set_ylabel('Buffer Hit Ratio (%)', color=color_twin, fontsize=11, fontweight='bold')
     ax2_twin.tick_params(axis='y', labelcolor=color_twin)
     ax2_twin.set_ylim([0, 100])
 
